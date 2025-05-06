@@ -2,6 +2,7 @@
 
 ## Team Members
 - Bruna Simões
+- Catarina Ribeirinha
 - Marco Galão
 - Margarida Cardoso
 
