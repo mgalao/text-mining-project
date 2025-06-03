@@ -16,6 +16,9 @@ from nltk.stem.wordnet import WordNetLemmatizer
 import ftfy #to fix encoding issues
 import emoji
 from tqdm import tqdm
+from langdetect import detect
+from langdetect.lang_detect_exception import LangDetectException
+
 
 def get_top_words_by_class(df, label_col, text_col, top_criteria=10):
     result = []
@@ -25,6 +28,14 @@ def get_top_words_by_class(df, label_col, text_col, top_criteria=10):
         for word, freq in most_common:
             result.append({'label': label, 'word': word, 'freq': freq})
     return pd.DataFrame(result)
+
+# Function to safely detect language
+def detect_language(text):
+    try:
+        return detect(text)
+    except LangDetectException:
+        return "error"
+
 
 def clean_text(text_list, lemmatize=True, stem=False):
     stop = set(stopwords.words('english'))
@@ -104,6 +115,14 @@ def clean_text(text_list, lemmatize=True, stem=False):
         # Add cashtags back
         text += ' ' + ' '.join([tag.replace('$', 'TICKER_') for tag in cashtags])
 
+        # Remove @mentions
+        text = re.sub(r'@\w+', '', text)
+
+        # Remove #hashtags but keep the word
+        text = re.sub(r'#(\w+)', r'\1', text)
+
+        # Reduce repeated letters (e.g., "soooo good" becomes "soo good")
+        text = re.sub(r'(.)\1{2,}', r'\1\1', text)
 
         # Remove extra spaces
         text = re.sub(r'\s+', ' ', text).strip()
