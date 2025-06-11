@@ -18,7 +18,7 @@ import emoji
 from tqdm import tqdm
 from langdetect import detect
 from langdetect.lang_detect_exception import LangDetectException
-
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 def get_top_words_by_class(df, label_col, text_col, top_criteria=10):
     result = []
@@ -35,7 +35,6 @@ def detect_language(text):
         return detect(text)
     except LangDetectException:
         return "error"
-
 
 def clean_text(text_list, lemmatize=True, stem=False):
     stop = set(stopwords.words('english'))
@@ -146,3 +145,87 @@ def clean_text(text_list, lemmatize=True, stem=False):
 
     return cleaned
 
+def compute_metrics(y_true, y_pred):
+    """
+    Compute F1, precision, recall, and accuracy for given true and predicted labels.
+    Parameters:
+    - y_true: true labels
+    - y_pred: predicted labels
+    Returns:
+    - A tuple of (F1, precision, recall, accuracy) rounded to 4 decimal places.
+    """
+    precision, recall, f1, _ = precision_recall_fscore_support(y_true, y_pred, average='macro', zero_division=0)
+    accuracy = accuracy_score(y_true, y_pred)
+    return round(f1, 4), round(precision, 4), round(recall, 4), round(accuracy, 4)
+
+def get_metrics_df(model_name, y_train, y_train_pred, y_val, y_val_pred):
+    """
+    Generate a DataFrame with classification metrics for a single model.
+    Parameters:
+    - model_name: str
+    - y_train, y_train_pred, y_val, y_val_pred: arrays/lists of true and predicted labels
+    Returns:
+    - A one-row DataFrame with evaluation metrics.
+    """
+    # Compute metrics for train and validation sets
+    train_f1, train_prec, train_rec, train_acc = compute_metrics(y_train, y_train_pred)
+    val_f1, val_prec, val_rec, val_acc = compute_metrics(y_val, y_val_pred)
+
+    # Create a dictionary with the metrics
+    data = {
+        "Model": model_name,
+        "Train F1 (Macro)": train_f1,
+        "Val F1 (Macro)": val_f1,
+        "Train Precision": train_prec,
+        "Val Precision": val_prec,
+        "Train Recall": train_rec,
+        "Val Recall": val_rec,
+        "Train Accuracy": train_acc,
+        "Val Accuracy": val_acc
+    }
+
+    return pd.DataFrame([data])
+
+def plot_metrics(y_train, y_train_pred, y_val, y_val_pred, title="Model Performance"):
+    """
+    Plots accuracy, precision, recall, and F1 score for train and validation sets.
+
+    Parameters:
+    - y_train: True training labels
+    - y_train_pred: Predicted training labels
+    - y_val: True validation labels
+    - y_val_pred: Predicted validation labels
+    - title: Plot title
+    """
+    # Set Seaborn style
+    sns.set(style="whitegrid")
+
+    # Compute metrics
+    train_scores = compute_metrics(y_train, y_train_pred)
+    val_scores = compute_metrics(y_val, y_val_pred)
+
+    labels = ['F1 Score (Macro)', 'Precision', 'Recall', 'Accuracy']
+    x = range(len(labels))
+    
+    bar_width = 0.35
+    plt.figure(figsize=(9, 5))
+
+    # Plot bars
+    train_bars = plt.bar(x, train_scores, width=bar_width, label='Train', color='#5c676c')
+    val_bars = plt.bar([i + bar_width for i in x], val_scores, width=bar_width, label='Validation', color='#b9d706')
+
+    # Add values on top of bars
+    for bars in [train_bars, val_bars]:
+        for bar in bars:
+            yval = bar.get_height()
+            plt.text(bar.get_x() + bar.get_width() / 2, yval + 0.01, f'{yval:.4f}', ha='center', va='bottom', fontsize=9)
+
+    # Formatting
+    plt.xticks([i + bar_width / 2 for i in x], labels)
+    plt.ylim(0, 1.05)
+    plt.ylabel("Score")
+    plt.title(title)
+    plt.legend()
+    plt.grid(axis='y', linestyle='--', alpha=0.6)
+    plt.tight_layout()
+    plt.show()
