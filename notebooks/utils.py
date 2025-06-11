@@ -1,47 +1,56 @@
-import pandas as pd
-from collections import Counter
+# basic libraries
 import numpy as np
+import pandas as pd
+import re
+import string
+from collections import Counter
+from tqdm import tqdm
+import pickle
+
+# visualization
 import matplotlib.pyplot as plt
 import seaborn as sns
-import re
 from wordcloud import WordCloud
 import plotly.express as px
+from sklearn.metrics import (
+    classification_report,
+    accuracy_score,
+    precision_recall_fscore_support,
+    confusion_matrix,
+    ConfusionMatrixDisplay,
+)
+
+# NLP and text preprocessing
 import nltk
 from nltk.tokenize import word_tokenize
-import string
 from nltk.corpus import stopwords
-import re
-from nltk.stem import SnowballStemmer
-from nltk.stem.wordnet import WordNetLemmatizer
-import ftfy #to fix encoding issues
+from nltk.stem import SnowballStemmer, WordNetLemmatizer
+import ftfy  # Fix encoding issues
 import emoji
-from tqdm import tqdm
 from langdetect import detect
 from langdetect.lang_detect_exception import LangDetectException
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction.text import TfidfVectorizer
-import numpy as np
-import gensim.downloader
-import pickle
-#import packages
-from keras.models import Model
-from keras.layers import Input, LSTM, Dense, TimeDistributed, Bidirectional, Masking
-from keras import layers
-import tensorflow as tf
-import tensorflow.keras as keras
-from keras_preprocessing.sequence import pad_sequences
-from scipy import sparse
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import classification_report
-from sklearn.naive_bayes import MultinomialNB
-from gensim.models import Word2Vec
+
+# feature engineering
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from keras_preprocessing.sequence import pad_sequences
 from sklearn.utils.class_weight import compute_class_weight
-import matplotlib.pyplot as plt
+
+# embeddings
+import gensim.downloader
+from gensim.models import Word2Vec
+
+# models
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, accuracy_score
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.ensemble import RandomForestClassifier
+
+# deep learning
+import tensorflow as tf
+from keras import layers
+from keras.models import Model
+from keras.layers import Input, LSTM, Dense, TimeDistributed, Bidirectional, Masking
+
 
 
 def get_top_words_by_class(df, label_col, text_col, top_criteria=10):
@@ -262,9 +271,10 @@ def embedding_glove(x_train, y_train, x_val, model_glove, emb_size, model):
 
     model.fit(X_train_avg, y_train)
 
-    y_pred = model.predict(X_val_avg)
+    y_train_pred = model.predict(X_train_avg)
+    y_val_pred = model.predict(X_val_avg)
 
-    return X_train_avg, y_pred
+    return X_train_avg, y_train_pred, y_val_pred
 
 
 # Metrics
