@@ -6,6 +6,8 @@ import string
 from collections import Counter
 from tqdm import tqdm
 import pickle
+import random
+import math
 
 # visualization
 import matplotlib.pyplot as plt
@@ -47,10 +49,8 @@ from sklearn.ensemble import RandomForestClassifier
 
 # deep learning
 import tensorflow as tf
-from keras import layers
-from keras.models import Model
-from keras.layers import Input, LSTM, Dense, TimeDistributed, Bidirectional, Masking
-
+from tensorflow.keras import layers, Model
+from tensorflow.keras.layers import Input, LSTM, Dense, TimeDistributed, Bidirectional, Masking
 
 
 def get_top_words_by_class(df, label_col, text_col, top_criteria=10):
