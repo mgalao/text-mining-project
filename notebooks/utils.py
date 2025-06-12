@@ -1,13 +1,19 @@
 # basic libraries
+import os
+import time
+import math
+import pickle
+import random
 import numpy as np
 import pandas as pd
 import re
 import string
 from collections import Counter
 from tqdm import tqdm
-import pickle
-import random
-import math
+
+# environment and Azure OpenAI
+from dotenv import load_dotenv
+from openai import AzureOpenAI
 
 # visualization
 import matplotlib.pyplot as plt
@@ -40,6 +46,8 @@ from sklearn.utils.class_weight import compute_class_weight
 # embeddings
 import gensim.downloader
 from gensim.models import Word2Vec
+from transformers import AutoTokenizer, AutoModel
+import torch
 
 # models
 from sklearn.neighbors import KNeighborsClassifier
