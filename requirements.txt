@@ -1,0 +1,31 @@
+# Core Libraries
+numpy
+pandas
+tqdm
+ftfy
+emoji
+python-dotenv
+
+# Visualization
+matplotlib
+seaborn
+wordcloud
+plotly
+
+# NLP
+nltk
+langdetect
+
+# Feature Engineering
+scikit-learn
+keras-preprocessing
+
+# Embeddings
+gensim
+
+# Deep Learning
+tensorflow
+keras
+
+# Azure OpenAI
+openai
