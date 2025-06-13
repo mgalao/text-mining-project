@@ -210,11 +210,20 @@ def corpus2vec(corpus, glove_model):
         for doc in tqdm(corpus)
     ]
 
-def average_tweet_vectors(corpus_vectors, vector_size):
-    return np.array([
-        np.mean(tweet, axis=0) if len(tweet) > 0 else np.zeros(vector_size)
-        for tweet in corpus_vectors
-    ])
+def average_tweet_vectors(corpus, glove_model, vector_size):
+    index_set = set(glove_model.index_to_key)
+    word_vec = glove_model.get_vector
+
+    averaged_vectors = []
+    for doc in tqdm(corpus):
+        words = word_tokenize(doc)
+        vectors = [word_vec(w) for w in words if w in index_set]
+        if vectors:
+            averaged_vectors.append(np.mean(vectors, axis=0))
+        else:
+            averaged_vectors.append(np.zeros(vector_size))
+    return np.array(averaged_vectors)
+
 
 # embeddings
 def embedding_bow(x_train, y_train, x_val, model, ngram_range=(1,1), oversampling_function=None):
@@ -292,15 +301,11 @@ def embedding_word2vec(x_train, y_train, x_val, window, min_count, model, vector
     return X_train_vec, y_train_pred, y_val_pred
 
 def embedding_glove(x_train, y_train, x_val, model_glove, emb_size, model, oversampling_function=None):
-    x_train = corpus2vec(x_train['text'], model_glove)
-    x_val = corpus2vec(x_val['text'], model_glove)
-
-    X_train_avg = average_tweet_vectors(x_train, emb_size)
-    X_val_avg = average_tweet_vectors(x_val, emb_size)
+    X_train_avg = average_tweet_vectors(x_train['text'], model_glove, emb_size)
+    X_val_avg = average_tweet_vectors(x_val['text'], model_glove, emb_size)
 
     if oversampling_function:
         X_train_avg, y_train = oversampling_function(X_train_avg, y_train)
-
 
     model.fit(X_train_avg, y_train)
 
@@ -308,6 +313,7 @@ def embedding_glove(x_train, y_train, x_val, model_glove, emb_size, model, overs
     y_val_pred = model.predict(X_val_avg)
 
     return X_train_avg, y_train_pred, y_val_pred
+
 
 def embedding_te3s(texts, cache_file, client, model, delay=1.0, batch_size=32, force_reload=False):
     # Check if the cache file exists and if we should force reload
