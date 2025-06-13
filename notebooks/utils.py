@@ -396,6 +396,80 @@ def oversample(X, y):
 
 
 
+# Function to classify texts using GPT-4o with few-shot examples
+def classify_with_gpt4o_fewshot(texts, label_options, few_shot_examples=None,
+                                delay=1.0, client=None, deployment="gpt-4o", batch_size=16):
+    
+    predictions = []
+    # Calculate the number of batches
+    num_batches = math.ceil(len(texts) / batch_size)
+
+    # System prompt
+    system_prompt = (
+        f"You are a text classification assistant. You are analyzing short social media texts (tweets) "
+        f"and classifying them into one of the following categories: {', '.join(map(str, label_options))}. "
+        f"Respond only with the correct category label — no explanation."
+    )
+
+    for i in tqdm(range(num_batches), desc="Classifying with GPT-4o"):
+        # Get the current batch of texts
+        batch_texts = texts[i*batch_size : (i+1)*batch_size]
+
+        for text in batch_texts:
+            messages = [{"role": "system", "content": system_prompt}]
+
+            # Add few-shot examples
+            if few_shot_examples:
+                for example in few_shot_examples:
+                    messages.append({"role": "user", "content": example['text']})
+                    messages.append({"role": "assistant", "content": example['label']})
+
+            # Add actual input
+            messages.append({"role": "user", "content": text})
+
+            try:
+                # Call the Azure OpenAI API
+                response = client.chat.completions.create(
+                    model=deployment,
+                    messages=messages,
+                    max_tokens=10,
+                    temperature=0
+                )
+                output = response.choices[0].message.content.strip()
+            except Exception as e:
+                print(f"Error on input '{text[:30]}...': {e}")
+                output = "unknown" # Fallback in case of error
+
+            # Append the output to predictions
+            predictions.append(output)
+            # Delay to avoid hitting rate limits
+            time.sleep(delay)
+
+    return predictions
+
+# Function to cache or run classification with gpt-4o with few-shot examples
+def cached_classification_run(filename, texts, label_options, few_shot_examples=None,
+                              delay=1.0, client=None, deployment="gpt-4o", force_reload=False, batch_size=16):
+    
+    # If the cache file exists and force_reload is False, load from cache
+    if not force_reload and os.path.exists(filename):
+        print(f"Loading cached results from {filename}")
+        with open(filename, "rb") as f:
+            predictions = pickle.load(f)
+    # Otherwise, run classification and save to cache
+    else:
+        print(f"{'Force reload enabled.' if force_reload else 'No cache found.'} Running classification and saving to {filename}")
+        # Get predictions using the classification function
+        predictions = classify_with_gpt4o_fewshot(
+            texts, label_options, few_shot_examples=few_shot_examples,
+            delay=delay, client=client, deployment=deployment, batch_size=batch_size
+        )
+        # Save predictions to cache
+        with open(filename, "wb") as f:
+            pickle.dump(predictions, f)
+
+    return predictions
+
 # Metrics
 
 def compute_metrics(y_true, y_pred):
