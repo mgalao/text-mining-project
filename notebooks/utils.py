@@ -40,6 +40,8 @@ import ftfy  # Fix encoding issues
 import emoji
 from langdetect import detect
 from langdetect.lang_detect_exception import LangDetectException
+import contractions
+import string
 
 # feature engineering
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
@@ -175,9 +177,12 @@ def clean_text(text_list, lemmatize=True, stem=False):
         # Remove extra spaces
         text = re.sub(r'\s+', ' ', text).strip()
 
+        # Expand contractions like "can't" -> "can not"
+        text = contractions.fix(text)
+
         important_terms = {
             'up', 'down', 'rise', 'fall', 'increase', 'decrease', 'drop', 'plunge',
-            'crash', 'tank', 'soar', 'rally', 'surge', 'slump', 'gain', 'loss'
+            'crash', 'tank', 'soar', 'rally', 'surge', 'slump', 'gain', 'loss', 'not'
         }
         
         # Tokenize and remove stopwords
