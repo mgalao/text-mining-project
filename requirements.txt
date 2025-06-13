@@ -11,6 +11,7 @@ matplotlib
 seaborn
 wordcloud
 plotly
+nbformat>=4.2.0
 
 # NLP
 nltk
@@ -19,6 +20,10 @@ langdetect
 # Feature Engineering
 scikit-learn
 keras-preprocessing
+imblearn
+
+# ML Models
+xgboost
 
 # Embeddings and Transformers
 gensim

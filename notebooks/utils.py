@@ -15,6 +15,9 @@ from tqdm import tqdm
 from dotenv import load_dotenv
 from openai import AzureOpenAI
 
+# data splitting
+from sklearn.model_selection import train_test_split
+
 # visualization
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -44,7 +47,6 @@ from keras_preprocessing.sequence import pad_sequences
 from sklearn.utils.class_weight import compute_class_weight
 from imblearn.over_sampling import SMOTE
 
-
 # embeddings
 import gensim.downloader
 from gensim.models import Word2Vec
@@ -57,7 +59,6 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
-
 
 # deep learning
 import tensorflow as tf
