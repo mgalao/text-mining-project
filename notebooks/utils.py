@@ -42,6 +42,8 @@ from langdetect.lang_detect_exception import LangDetectException
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from keras_preprocessing.sequence import pad_sequences
 from sklearn.utils.class_weight import compute_class_weight
+from imblearn.over_sampling import SMOTE
+
 
 # embeddings
 import gensim.downloader
@@ -54,6 +56,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
+
 
 # deep learning
 import tensorflow as tf
@@ -212,29 +216,39 @@ def average_tweet_vectors(corpus_vectors, vector_size):
     ])
 
 # embeddings
-def embedding_bow(x_train, y_train, x_val, model, ngram_range=(1,1)):
+def embedding_bow(x_train, y_train, x_val, model, ngram_range=(1,1), oversampling_function=None):
     bow = CountVectorizer(binary=True, ngram_range=ngram_range) # each term is marked as present or not per document - good for short text
     X_bow = bow.fit_transform(x_train['text'])
 
-    model.fit(X_bow,y_train)
+    if oversampling_function:
+        X_bow_resampled, y_train_resampled = oversampling_function(X_bow.toarray(), y_train)
+    else:
+        X_bow_resampled, y_train_resampled = X_bow, y_train
 
-    y_train_pred = model.predict(bow.transform(x_train['text']))
+    model.fit(X_bow_resampled, y_train_resampled)
+
+    y_train_pred = model.predict(X_bow.toarray())
     y_val_pred = model.predict(bow.transform(x_val['text']))
 
     return X_bow, y_train_pred, y_val_pred, bow
 
-def embedding_tfidf(x_train, y_train, x_val, model, max_df, ngram_range=(1,1)):
+def embedding_tfidf(x_train, y_train, x_val, model, max_df, ngram_range=(1,1), oversampling_function=None):
     tfidf = TfidfVectorizer(max_df=max_df, ngram_range=ngram_range) 
     X_tfidf = tfidf.fit_transform(x_train['text']).toarray()
 
-    model.fit(X_tfidf,y_train)
+    if oversampling_function:
+        X_tfidf_resampled, y_train_resampled = oversampling_function(X_tfidf, y_train)
+    else:
+        X_tfidf_resampled, y_train_resampled = X_tfidf, y_train
+
+    model.fit(X_tfidf_resampled,y_train_resampled)
 
     y_train_pred = model.predict(tfidf.transform(x_train['text']))
     y_val_pred = model.predict(tfidf.transform(x_val['text']))
 
     return X_tfidf, y_train_pred, y_val_pred, tfidf
 
-def embedding_word2vec(x_train, y_train, x_val, window, min_count, model, vector_size=None, sg=1):
+def embedding_word2vec(x_train, y_train, x_val, window, min_count, model, vector_size=None, sg=1, oversampling_function=None):
     tokenized_train = [word_tokenize(tweet.lower()) for tweet in x_train['text']]
     tokenized_val = [word_tokenize(tweet.lower()) for tweet in x_val['text']]
 
@@ -266,6 +280,9 @@ def embedding_word2vec(x_train, y_train, x_val, window, min_count, model, vector
     X_train_vec = np.array([tweet_to_vec(tokens, word2vec, word2vec.vector_size) for tokens in tokenized_train])
     X_val_vec = np.array([tweet_to_vec(tokens, word2vec, word2vec.vector_size) for tokens in tokenized_val])
 
+    if oversampling_function:
+        X_train_vec, y_train = oversampling_function(X_train_vec, y_train)
+
     model.fit(X_train_vec,y_train)
 
     y_train_pred = model.predict(X_train_vec)
@@ -273,12 +290,16 @@ def embedding_word2vec(x_train, y_train, x_val, window, min_count, model, vector
 
     return X_train_vec, y_train_pred, y_val_pred
 
-def embedding_glove(x_train, y_train, x_val, model_glove, emb_size, model):
+def embedding_glove(x_train, y_train, x_val, model_glove, emb_size, model, oversampling_function=None):
     x_train = corpus2vec(x_train['text'], model_glove)
     x_val = corpus2vec(x_val['text'], model_glove)
 
     X_train_avg = average_tweet_vectors(x_train, emb_size)
     X_val_avg = average_tweet_vectors(x_val, emb_size)
+
+    if oversampling_function:
+        X_train_avg, y_train = oversampling_function(X_train_avg, y_train)
+
 
     model.fit(X_train_avg, y_train)
 
@@ -286,6 +307,13 @@ def embedding_glove(x_train, y_train, x_val, model_glove, emb_size, model):
     y_val_pred = model.predict(X_val_avg)
 
     return X_train_avg, y_train_pred, y_val_pred
+
+
+from imblearn.over_sampling import BorderlineSMOTE
+
+def oversample(X, y):
+    return BorderlineSMOTE(random_state=42).fit_resample(X, y)
+
 
 
 # Metrics
