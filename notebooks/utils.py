@@ -46,7 +46,7 @@ from sklearn.utils.class_weight import compute_class_weight
 # embeddings
 import gensim.downloader
 from gensim.models import Word2Vec
-from transformers import AutoTokenizer, AutoModel
+from transformers import AutoTokenizer, AutoModel, DataCollatorWithPadding, AutoModelForSequenceClassification, Trainer, TrainingArguments
 import torch
 
 # models
@@ -59,6 +59,9 @@ from sklearn.ensemble import RandomForestClassifier
 import tensorflow as tf
 from tensorflow.keras import layers, Model
 from tensorflow.keras.layers import Input, LSTM, Dense, TimeDistributed, Bidirectional, Masking
+
+# datasets from Hugging Face
+from datasets import Dataset, DatasetDict
 
 
 def get_top_words_by_class(df, label_col, text_col, top_criteria=10):

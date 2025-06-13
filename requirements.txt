@@ -20,8 +20,11 @@ langdetect
 scikit-learn
 keras-preprocessing
 
-# Embeddings
+# Embeddings and Transformers
 gensim
+transformers[torch]
+torch
+accelerate>=0.26.0
 
 # Deep Learning
 tensorflow==2.15.0
@@ -30,6 +33,5 @@ tf-keras
 # Azure OpenAI
 openai
 
-# Hugging Face Transformers and PyTorch
-transformers
-torch
+# Hugging Face Datasets
+datasets
