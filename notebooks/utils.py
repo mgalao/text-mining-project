@@ -308,6 +308,74 @@ def embedding_glove(x_train, y_train, x_val, model_glove, emb_size, model, overs
 
     return X_train_avg, y_train_pred, y_val_pred
 
+def embedding_te3s(texts, cache_file, client, model, delay=1.0, batch_size=32, force_reload=False):
+    # Check if the cache file exists and if we should force reload
+    if not force_reload and os.path.exists(cache_file):
+        print(f"Loading embeddings from {cache_file}...")
+        with open(cache_file, "rb") as f:
+            return pickle.load(f)
+    
+    # If not, generate embeddings
+    print(f"Generating embeddings in batches and saving to {cache_file}...")
+    embeddings = []
+    num_batches = math.ceil(len(texts) / batch_size)
+    
+    for i in tqdm(range(num_batches)):
+        # Get the current batch of texts
+        batch_texts = texts[i*batch_size : (i+1)*batch_size]
+        try:
+            response = client.embeddings.create(
+                input=batch_texts,
+                model=model
+            )
+            batch_embeddings = [item.embedding for item in response.data]
+            embeddings.extend(batch_embeddings)
+        except Exception as e:
+            print(f"Error on batch {i}: {e}")
+            # Append zero vectors for this batch
+            embeddings.extend([[0.0]*1536]*len(batch_texts))
+        
+        # Respect the rate limit
+        time.sleep(delay)
+    
+    # Save the embeddings to the cache file
+    with open(cache_file, "wb") as f:
+        pickle.dump(embeddings, f)
+    
+    return embeddings
+
+def embedding_roberta(texts, cache_file, tokenizer, model, batch_size=32, force_reload=False, max_length=512):
+    # Check if the cache file exists and if we should force reload
+    if not force_reload and os.path.exists(cache_file):
+        print(f"Loading RoBERTa embeddings from {cache_file}...")
+        with open(cache_file, "rb") as f:
+            return pickle.load(f)
+    
+    # If not, generate embeddings
+    print(f"Generating RoBERTa embeddings and saving to {cache_file}...")
+    embeddings = []
+    num_batches = math.ceil(len(texts) / batch_size)
+
+    for i in tqdm(range(num_batches)):
+        # Get the current batch of texts
+        batch_texts = texts[i*batch_size:(i+1)*batch_size]
+        inputs = tokenizer(batch_texts, return_tensors="pt", padding=True, truncation=True, max_length=max_length)
+        
+        # Move inputs to the same device as the model
+        with torch.no_grad():
+            outputs = model(**inputs)
+
+        # Get the CLS token embeddings
+        cls_embeddings = outputs.last_hidden_state[:, 0, :]
+        embeddings.extend(cls_embeddings.numpy())
+    
+    # Save the embeddings to the cache file
+    with open(cache_file, "wb") as f:
+        pickle.dump(embeddings, f)
+
+    return embeddings
+
+
 
 from imblearn.over_sampling import BorderlineSMOTE
 
