@@ -38,5 +38,8 @@ tf-keras
 # Azure OpenAI
 openai
 
+# Hyperparameter Optimization
+optuna
+
 # Hugging Face Datasets
 datasets
