@@ -72,6 +72,9 @@ from keras.metrics import Precision, Recall, AUC, TopKCategoricalAccuracy
 # datasets from Hugging Face
 from datasets import Dataset, DatasetDict
 
+# optuna
+from optuna import Trial
+
 
 
 # --------------- PRE PROCESSING ---------------
