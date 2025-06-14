@@ -16,6 +16,7 @@ nbformat>=4.2.0
 # NLP
 nltk
 langdetect
+contractions
 
 # Feature Engineering
 scikit-learn
