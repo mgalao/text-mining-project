@@ -423,8 +423,9 @@ def embedding_glove_lstm(x_train, y_train, x_val, y_val, model_glove, emb_size, 
 
     model_lstm.fit(X_train_pad, y_train_encoded, batch_size=batch_size, epochs=epochs, validation_data=(X_val_pad, y_val_encoded))
 
-    y_train_pred = np.argmax(model_lstm.predict(X_train_pad), axis=1)
-    y_val_pred = np.argmax(model_lstm.predict(X_val_pad), axis=1)
+    y_train_pred = tf.argmax(model_lstm.predict(X_train_pad), axis=1).numpy()
+    y_val_pred = tf.argmax(model_lstm.predict(X_val_pad), axis=1).numpy()
+
 
     return X_train_pad, y_train_pred, y_val_pred
 
