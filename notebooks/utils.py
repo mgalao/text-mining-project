@@ -48,11 +48,13 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from keras_preprocessing.sequence import pad_sequences
 from sklearn.utils.class_weight import compute_class_weight
 from imblearn.over_sampling import SMOTE, BorderlineSMOTE
+from collections import defaultdict
+from sklearn.utils import resample
 
 # embeddings
 import gensim.downloader
 from gensim.models import Word2Vec
-from transformers import AutoTokenizer, AutoModel, DataCollatorWithPadding, AutoModelForSequenceClassification, Trainer, TrainingArguments
+from transformers import AutoTokenizer, AutoModel, DataCollatorWithPadding, AutoModelForSequenceClassification, Trainer, TrainingArguments, AutoConfig
 import torch
 
 # models
@@ -242,6 +244,20 @@ def average_tweet_vectors(corpus, glove_model, vector_size):
 def oversample(X, y):
     return BorderlineSMOTE(random_state=42).fit_resample(X, y)
 
+def oversample_data(texts, labels):
+    label_to_texts = defaultdict(list)
+    for text, label in zip(texts, labels):
+        label_to_texts[label].append(text)
+
+    max_len = max(len(texts) for texts in label_to_texts.values())
+
+    oversampled_texts, oversampled_labels = [], []
+    for label, texts in label_to_texts.items():
+        resampled = resample(texts, replace=True, n_samples=max_len, random_state=42)
+        oversampled_texts.extend(resampled)
+        oversampled_labels.extend([label] * max_len)
+
+    return oversampled_texts, oversampled_labels
 
 
 
@@ -250,8 +266,8 @@ def oversample(X, y):
 # --------------- EMBEDDINGS --------------- 
 
 # BoW
-def embedding_bow(x_train, y_train, x_val, model, ngram_range=(1,1), oversampling_function=None):
-    bow = CountVectorizer(binary=True, ngram_range=ngram_range) # each term is marked as present or not per document - good for short text
+def embedding_bow(x_train, y_train, x_val, model, max_df, min_df, ngram_range=(1,1), oversampling_function=None):
+    bow = CountVectorizer(binary=True, ngram_range=ngram_range, max_df=max_df, min_df=min_df) # each term is marked as present or not per document - good for short text
     X_bow = bow.fit_transform(x_train['text'])
 
     if oversampling_function:
@@ -265,8 +281,8 @@ def embedding_bow(x_train, y_train, x_val, model, ngram_range=(1,1), oversamplin
     return X_bow, y_train_pred, y_val_pred, bow
 
 # TF-IDF
-def embedding_tfidf(x_train, y_train, x_val, model, max_df, ngram_range=(1,1), oversampling_function=None):
-    tfidf = TfidfVectorizer(max_df=max_df, ngram_range=ngram_range) 
+def embedding_tfidf(x_train, y_train, x_val, model, max_df, min_df, ngram_range=(1,1), oversampling_function=None):
+    tfidf = TfidfVectorizer(max_df=max_df, min_df=min_df, ngram_range=ngram_range) 
     X_tfidf = tfidf.fit_transform(x_train['text']).toarray()
 
     if oversampling_function:
@@ -631,6 +647,13 @@ def compute_metrics(y_true, y_pred):
     precision, recall, f1, _ = precision_recall_fscore_support(y_true, y_pred, average='macro', zero_division=0)
     accuracy = accuracy_score(y_true, y_pred)
     return round(f1, 4), round(precision, 4), round(recall, 4), round(accuracy, 4)
+
+def compute_metrics_transformers(pred):
+    preds = np.argmax(pred.predictions, axis=1)
+    labels = pred.label_ids
+    p, r, f1, _ = precision_recall_fscore_support(labels, preds, average='macro')
+    acc = accuracy_score(labels, preds)
+    return {"accuracy": acc, "precision": p, "recall": r, "f1": f1}
 
 def get_metrics_df(model_name, y_train, y_train_pred, y_val, y_val_pred):
     """
