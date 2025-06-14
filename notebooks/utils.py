@@ -47,7 +47,7 @@ import string
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from keras_preprocessing.sequence import pad_sequences
 from sklearn.utils.class_weight import compute_class_weight
-from imblearn.over_sampling import SMOTE
+from imblearn.over_sampling import SMOTE, BorderlineSMOTE
 
 # embeddings
 import gensim.downloader
@@ -65,11 +65,15 @@ from xgboost import XGBClassifier
 # deep learning
 import tensorflow as tf
 from tensorflow.keras import layers, Model
-from tensorflow.keras.layers import Input, LSTM, Dense, TimeDistributed, Bidirectional, Masking
+from tensorflow.keras.layers import Input, LSTM, Dense, TimeDistributed, Bidirectional, Masking, Dropout
+from tensorflow.keras.optimizers import Adam
 
 # datasets from Hugging Face
 from datasets import Dataset, DatasetDict
 
+
+
+# --------------- PRE PROCESSING ---------------
 
 def get_top_words_by_class(df, label_col, text_col, top_criteria=10):
     result = []
@@ -80,7 +84,7 @@ def get_top_words_by_class(df, label_col, text_col, top_criteria=10):
             result.append({'label': label, 'word': word, 'freq': freq})
     return pd.DataFrame(result)
 
-# Function to safely detect language
+# Function to detect language
 def detect_language(text):
     try:
         return detect(text)
@@ -200,15 +204,17 @@ def clean_text(text_list, lemmatize=True, stem=False):
     return cleaned
 
 
+# --------------- AUX - EMBEDDINGS --------------- 
+
 # Function to convert tokens into mean embedding vector
 def tweet_to_vec(tokens, model, size):
     vectors = [model.wv[word] for word in tokens if word in model.wv]
     return np.mean(vectors, axis=0) if vectors else np.zeros(size)
 
-#get word embeddings from documents
+# get word embeddings from documents
 def corpus2vec(corpus, glove_model):
-    index_set = set(glove_model.index_to_key)  # fast lookup
-    word_vec = glove_model.get_vector          # alias for speed
+    index_set = set(glove_model.index_to_key)  
+    word_vec = glove_model.get_vector    
 
     return [
         [word_vec(word) for word in word_tokenize(doc) if word in index_set]
@@ -229,40 +235,50 @@ def average_tweet_vectors(corpus, glove_model, vector_size):
             averaged_vectors.append(np.zeros(vector_size))
     return np.array(averaged_vectors)
 
+def oversample(X, y):
+    return BorderlineSMOTE(random_state=42).fit_resample(X, y)
 
-# embeddings
+
+
+
+
+
+# --------------- EMBEDDINGS --------------- 
+
+# BoW
 def embedding_bow(x_train, y_train, x_val, model, ngram_range=(1,1), oversampling_function=None):
     bow = CountVectorizer(binary=True, ngram_range=ngram_range) # each term is marked as present or not per document - good for short text
     X_bow = bow.fit_transform(x_train['text'])
 
     if oversampling_function:
-        X_bow_resampled, y_train_resampled = oversampling_function(X_bow.toarray(), y_train)
-    else:
-        X_bow_resampled, y_train_resampled = X_bow, y_train
+        X_bow, y_train = oversampling_function(X_bow.toarray(), y_train)
 
-    model.fit(X_bow_resampled, y_train_resampled)
+    model.fit(X_bow, y_train)
 
-    y_train_pred = model.predict(X_bow.toarray())
+    y_train_pred = model.predict(bow.transform(x_train['text']))
     y_val_pred = model.predict(bow.transform(x_val['text']))
 
     return X_bow, y_train_pred, y_val_pred, bow
 
+# TF-IDF
 def embedding_tfidf(x_train, y_train, x_val, model, max_df, ngram_range=(1,1), oversampling_function=None):
     tfidf = TfidfVectorizer(max_df=max_df, ngram_range=ngram_range) 
     X_tfidf = tfidf.fit_transform(x_train['text']).toarray()
 
     if oversampling_function:
-        X_tfidf_resampled, y_train_resampled = oversampling_function(X_tfidf, y_train)
+        X_tfidf, y_train = oversampling_function(X_tfidf, y_train)
     else:
-        X_tfidf_resampled, y_train_resampled = X_tfidf, y_train
+        X_tfidf, y_train = X_tfidf, y_train
 
-    model.fit(X_tfidf_resampled,y_train_resampled)
+    model.fit(X_tfidf,y_train)
 
     y_train_pred = model.predict(tfidf.transform(x_train['text']))
     y_val_pred = model.predict(tfidf.transform(x_val['text']))
 
     return X_tfidf, y_train_pred, y_val_pred, tfidf
 
+
+# Word2Vec
 def embedding_word2vec(x_train, y_train, x_val, window, min_count, model, vector_size=None, sg=1, oversampling_function=None):
     tokenized_train = [word_tokenize(tweet.lower()) for tweet in x_train['text']]
     tokenized_val = [word_tokenize(tweet.lower()) for tweet in x_val['text']]
@@ -277,7 +293,7 @@ def embedding_word2vec(x_train, y_train, x_val, window, min_count, model, vector
     if vector_size == None:
         word2vec = Word2Vec(
             sentences=tokenized_train,
-            vector_size=max(train_len),    # size of the embedding vectors 
+            vector_size=max(train_len),    
             window=window,        
             min_count=min_count,     
             sg=sg            
@@ -305,22 +321,126 @@ def embedding_word2vec(x_train, y_train, x_val, window, min_count, model, vector
 
     return X_train_vec, y_train_pred, y_val_pred
 
-def embedding_glove(x_train, y_train, x_val, model_glove, emb_size, model, oversampling_function=None):
-    X_train_avg = average_tweet_vectors(x_train['text'], model_glove, emb_size)
-    X_val_avg = average_tweet_vectors(x_val['text'], model_glove, emb_size)
+
+def embedding_word2vec_lstm(x_train, y_train, x_val, y_val, window, min_count, model_lstm, n_classes=3, batch_size=16, epochs=10, vector_size=None, sg=1, max_seq_len=None, oversampling_function=None):
+    tokenized_train = [word_tokenize(tweet.lower()) for tweet in x_train['text']]
+    tokenized_val = [word_tokenize(tweet.lower()) for tweet in x_val['text']]
+
+    if max_seq_len is None:
+        max_seq_len = max(len(tokens) for tokens in tokenized_train)
+    
+    if vector_size is None:
+        corpus = x_train['text']
+
+        #get list with lenghts of sentences
+        train_len = []
+        for i in corpus:
+            train_len.append(len(i))
+        
+        vector_size = max(train_len)
+
+    word2vec_model = Word2Vec(
+        sentences=tokenized_train,
+        vector_size=vector_size,
+        window=window,
+        min_count=min_count,
+        sg=sg
+    )
+
+    emb_size = word2vec_model.vector_size
+
+    def sentence_to_seq(tokens):
+        return [word2vec_model.wv[word] if word in word2vec_model.wv else np.zeros(emb_size) for word in tokens]
+
+    X_train_seq = [sentence_to_seq(tokens) for tokens in tokenized_train]
+    X_val_seq = [sentence_to_seq(tokens) for tokens in tokenized_val]
+
+    X_train_pad = pad_sequences(X_train_seq, maxlen=max_seq_len, dtype='float32', padding='post')
+    X_val_pad = pad_sequences(X_val_seq, maxlen=max_seq_len, dtype='float32', padding='post')
 
     if oversampling_function:
-        X_train_avg, y_train = oversampling_function(X_train_avg, y_train)
+        X_train_pad, y_train = oversampling_function(X_train_pad, y_train)
 
-    model.fit(X_train_avg, y_train)
+    y_train_encoded = tf.one_hot(y_train, depth=n_classes)
+    y_val_encoded = tf.one_hot(y_val, depth=n_classes)
 
-    y_train_pred = model.predict(X_train_avg)
-    y_val_pred = model.predict(X_val_avg)
+    model_lstm.fit(X_train_pad, y_train_encoded, batch_size=batch_size, epochs=epochs, validation_data=(X_val_pad, y_val_encoded))
 
-    return X_train_avg, y_train_pred, y_val_pred
+    y_train_pred = np.argmax(model_lstm.predict(X_train_pad), axis=1)
+    y_val_pred = np.argmax(model_lstm.predict(X_val_pad), axis=1)
+
+    return X_train_pad, y_train_pred, y_val_pred
 
 
-def embedding_te3s(texts, cache_file, client, model, delay=1.0, batch_size=32, force_reload=False):
+
+# Glove
+def embedding_glove(x_train, y_train, x_val, y_val, model_glove, emb_size, model_lstm, n_classes=3, batch_size=16, epochs=10, oversampling_function=None):
+    X_train_vec = corpus2vec(x_train['text'], model_glove, emb_size)
+    X_val_vec   = corpus2vec(x_val['text'], model_glove, emb_size)
+
+    if max_seq_len is None:
+        max_seq_len = max(len(seq) for seq in X_train_vec)
+
+    if emb_size is None:
+        corpus = x_train['text']
+
+        #get list with lenghts of sentences
+        train_len = []
+        for i in corpus:
+            train_len.append(len(i))
+        
+        emb_size = max(train_len)
+    
+    # pad sequences (shape: n_samples x max_seq_len x emb_size)
+    X_train_pad = pad_sequences(X_train_vec, maxlen=max_seq_len, dtype='float32', padding='post')
+    X_val_pad   = pad_sequences(X_val_vec, maxlen=max_seq_len, dtype='float32', padding='post')
+
+    if oversampling_function:
+        X_train_pad, y_train = oversampling_function(X_train_pad, y_train)
+
+    # one-hot encode targets 
+    y_train_encoded = tf.one_hot(y_train, depth=n_classes)
+    y_val_encoded = tf.one_hot(y_val, depth=n_classes)
+
+    model_lstm.fit(X_train_pad, y_train_encoded, batch_size=batch_size, epochs=epochs, validation_data=(X_val_pad, y_val_encoded))
+
+    y_train_pred = np.argmax(model_lstm.predict(X_train_pad), axis=1)
+    y_val_pred = np.argmax(model_lstm.predict(X_val_pad), axis=1)
+
+    return X_train_pad, y_train_pred, y_val_pred
+
+def embedding_glove_lstm(x_train, y_train, x_val, model_glove, emb_size, oversampling_function=None):
+    x_train_vec = average_tweet_vectors(x_train['text'], model_glove, emb_size)
+    x_val_vec = average_tweet_vectors(x_val['text'], model_glove, emb_size)
+
+    if oversampling_function:
+        x_train_vec, y_train = oversampling_function(x_train_vec, y_train)
+
+    x_pad = pad_sequences(x_train_vec, maxlen=emb_size, padding="post", dtype='float32')
+    y_encoded = tf.one_hot(y_train, depth=3)
+
+    x_val_pad = pad_sequences(x_val_vec, maxlen=emb_size, padding="post", dtype='float32')
+    y_val_encoded = tf.one_hot(x_val['label'], depth=3)
+
+    return x_pad, y_encoded, x_val_pad, y_val_encoded
+
+
+
+# Text Embedding 3 Small
+def embedding_te3s(train_texts, train_labels, val_texts, cache_file_train, cache_file_val, client, model_te3s, batch_size, model, force_reload=False, oversampling_function=None):
+    X_train = np.array(embedding_te3s_aux(train_texts, cache_file_train, client, model_te3s, batch_size=batch_size, force_reload=force_reload))
+    X_val = np.array(embedding_te3s_aux(val_texts, cache_file_val, client, model_te3s, batch_size=batch_size, force_reload=force_reload))
+
+    if oversampling_function:
+        X_train, y_train = oversampling_function(X_train, y_train)
+
+    model.fit(X_train, train_labels)
+    y_train_pred = model.predict(X_train)
+    y_val_pred = model.predict(X_val)
+
+    return X_train, y_train_pred, y_val_pred
+
+def embedding_te3s_aux(texts, cache_file, client, model, delay=1.0, batch_size=32, force_reload=False):
     # Check if the cache file exists and if we should force reload
     if not force_reload and os.path.exists(cache_file):
         print(f"Loading embeddings from {cache_file}...")
@@ -356,7 +476,25 @@ def embedding_te3s(texts, cache_file, client, model, delay=1.0, batch_size=32, f
     
     return embeddings
 
-def embedding_roberta(texts, cache_file, tokenizer, model, batch_size=32, force_reload=False, max_length=512):
+
+
+# Roberta
+def embedding_roberta(train_texts, train_labels, val_texts, cache_file_train, cache_file_val, tokenizer_roberta, model_roberta, batch_size, model, force_reload=False, oversampling_function=None):
+    # Get embeddings for train and validation sets
+    X_train = np.array(embedding_roberta_aux(train_texts, cache_file_train, tokenizer_roberta, model_roberta, batch_size=batch_size, force_reload=force_reload))
+    X_val = np.array(embedding_roberta_aux(val_texts, cache_file_val, tokenizer_roberta, model_roberta, batch_size=batch_size, force_reload=force_reload))
+
+    if oversampling_function:
+        X_train, y_train = oversampling_function(X_train, y_train)
+
+    model.fit(X_train, train_labels)
+    y_train_pred = model.predict(X_train)
+    y_val_pred = model.predict(X_val)
+
+    return X_train, y_train_pred, y_val_pred
+
+
+def embedding_roberta_aux(texts, cache_file, tokenizer, model, batch_size=32, force_reload=False, max_length=512):
     # Check if the cache file exists and if we should force reload
     if not force_reload and os.path.exists(cache_file):
         print(f"Loading RoBERTa embeddings from {cache_file}...")
@@ -389,12 +527,7 @@ def embedding_roberta(texts, cache_file, tokenizer, model, batch_size=32, force_
 
 
 
-from imblearn.over_sampling import BorderlineSMOTE
-
-def oversample(X, y):
-    return BorderlineSMOTE(random_state=42).fit_resample(X, y)
-
-
+# --------------- CLASSIFICATION --------------- 
 
 # Function to classify texts using GPT-4o with few-shot examples
 def classify_with_gpt4o_fewshot(texts, label_options, few_shot_examples=None,
@@ -406,9 +539,13 @@ def classify_with_gpt4o_fewshot(texts, label_options, few_shot_examples=None,
 
     # System prompt
     system_prompt = (
-        f"You are a text classification assistant. You are analyzing short social media texts (tweets) "
-        f"and classifying them into one of the following categories: {', '.join(map(str, label_options))}. "
-        f"Respond only with the correct category label — no explanation."
+        "You are a financial sentiment classification assistant. Your task is to analyze short social media texts (tweets) "
+        "that may influence or reflect investor sentiment regarding the stock market. Based on the content, classify each tweet "
+        f"into one of the following categories: {', '.join(map(str, label_options))}.\n\n"
+        "- Bearish (0): Suggests negative or pessimistic sentiment about the market or a stock.\n"
+        "- Bullish (1): Suggests positive or optimistic sentiment.\n"
+        "- Neutral (2): Does not express a clear opinion or is irrelevant to market sentiment.\n\n"
+        "Respond only with the correct category label — no explanation."
     )
 
     for i in tqdm(range(num_batches), desc="Classifying with GPT-4o"):
@@ -447,6 +584,7 @@ def classify_with_gpt4o_fewshot(texts, label_options, few_shot_examples=None,
 
     return predictions
 
+
 # Function to cache or run classification with gpt-4o with few-shot examples
 def cached_classification_run(filename, texts, label_options, few_shot_examples=None,
                               delay=1.0, client=None, deployment="gpt-4o", force_reload=False, batch_size=16):
@@ -470,7 +608,11 @@ def cached_classification_run(filename, texts, label_options, few_shot_examples=
 
     return predictions
 
-# Metrics
+
+
+
+
+# --------------- METRICS --------------- 
 
 def compute_metrics(y_true, y_pred):
     """
@@ -514,7 +656,9 @@ def get_metrics_df(model_name, y_train, y_train_pred, y_val, y_val_pred):
     return pd.DataFrame([data])
 
 
-# Plots
+
+
+# --------------- PLOTS --------------- 
 
 def plot_metrics(y_train, y_train_pred, y_val, y_val_pred, title="Model Performance"):
     """
