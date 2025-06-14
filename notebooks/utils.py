@@ -459,7 +459,7 @@ def embedding_te3s(train_texts, train_labels, val_texts, cache_file_train, cache
     y_train_pred = model.predict(X_train)
     y_val_pred = model.predict(X_val)
 
-    return X_train, y_train_pred, y_val_pred
+    return X_train, X_val, y_train_pred, y_val_pred
 
 def embedding_te3s_aux(texts, cache_file, client, model, delay=1.0, batch_size=32, force_reload=False):
     # Check if the cache file exists and if we should force reload
