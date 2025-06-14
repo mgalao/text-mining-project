@@ -375,20 +375,20 @@ def embedding_word2vec_lstm(x_train, y_train, x_val, y_val, window, min_count, m
 
 
 # Glove
-def embedding_glove(x_train, y_train, x_val, model_glove, emb_size, oversampling_function=None):
-    x_train_vec = average_tweet_vectors(x_train['text'], model_glove, emb_size)
-    x_val_vec = average_tweet_vectors(x_val['text'], model_glove, emb_size)
+def embedding_glove(x_train, y_train, x_val, model_glove, emb_size, model, oversampling_function=None):
+    X_train_avg = average_tweet_vectors(x_train['text'], model_glove, emb_size)
+    X_val_avg = average_tweet_vectors(x_val['text'], model_glove, emb_size)
 
     if oversampling_function:
-        x_train_vec, y_train = oversampling_function(x_train_vec, y_train)
+        X_train_avg, y_train = oversampling_function(X_train_avg, y_train)
 
-    x_pad = pad_sequences(x_train_vec, maxlen=emb_size, padding="post", dtype='float32')
-    y_encoded = tf.one_hot(y_train, depth=3)
+    model.fit(X_train_avg, y_train)
 
-    x_val_pad = pad_sequences(x_val_vec, maxlen=emb_size, padding="post", dtype='float32')
-    y_val_encoded = tf.one_hot(x_val['label'], depth=3)
+    y_train_pred = model.predict(X_train_avg)
+    y_val_pred = model.predict(X_val_avg)
 
-    return x_pad, y_encoded, x_val_pad, y_val_encoded
+    return X_train_avg, y_train_pred, y_val_pred
+
 
 def embedding_glove_lstm(x_train, y_train, x_val, y_val, model_glove, emb_size, model_lstm, n_classes=3, batch_size=16, epochs=10, oversampling_function=None, max_seq_len=None):
     X_train_vec = corpus2vec(x_train['text'], model_glove)
