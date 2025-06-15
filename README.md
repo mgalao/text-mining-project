@@ -16,8 +16,11 @@ Contains the datasets provided by the professors:
 - `train.csv`: Training data with labeled tweets.
 - `test.csv`: Test data for evaluation.
 
-### `notebooks/`
-Jupyter notebooks documenting the complete analysis pipeline:
+### `project/`
+Jupyter notebooks and files covering the whole process, from data exploration to generating predictions.
+
+- `pred_25.csv`  
+  A CSV file containing two columns: the test set IDs and the corresponding predicted labels.
 
 - `tm_final_25.ipynb`  
   Final solution notebook. Retrains the best-performing model on the full training dataset and generates predictions for evaluation.
