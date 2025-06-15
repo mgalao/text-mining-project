@@ -53,7 +53,8 @@ Jupyter notebooks and files covering the whole process, from data exploration to
   Aggregated classification metrics (macro F1-score, Precision, Recall, Accuracy) for all baseline models on both training and validation sets. This file supports comparative model evaluation and selection of top performing approaches.
 
 ### Root Files
-- `project_description.pdf` - Official project handout. 
+- `report_25.pdf` - Project report.
+- `project_description.pdf` - Official project handout.
 - `requirements.txt` - List of Python dependencies for this project.
 - `.gitignore` - Specifies files and folders excluded from version control.
 - `README.md` - This file.
