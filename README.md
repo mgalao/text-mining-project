@@ -17,7 +17,7 @@ Contains the datasets provided by the professors:
 - `test.csv`: Test data for evaluation.
 
 ### `project/`
-Jupyter notebooks documenting the complete analysis pipeline:
+Jupyter notebooks and files covering the whole process, from data exploration to generating predictions.
 
 - `pred_25.csv`  
   A CSV file containing two columns: the test set IDs and the corresponding predicted labels.
