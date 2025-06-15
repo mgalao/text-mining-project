@@ -18,6 +18,10 @@ Contains the datasets provided by the professors:
 
 ### `notebooks/`
 Jupyter notebooks documenting the complete analysis pipeline:
+
+- `tm_final_25.ipynb`  
+  Final solution notebook. Retrains the best-performing model on the full training dataset and generates predictions for evaluation.
+  
 - `1_EDA_&_Pre-Processing.ipynb`  
   Exploratory data analysis and text preprocessing.
 
@@ -27,8 +31,8 @@ Jupyter notebooks documenting the complete analysis pipeline:
 - `3_Classification_Transformers.ipynb`  
   Implementation and evaluation of transformer-based classifiers.
 
-- `4_Hyperparameter_Tuning_&_Final_Predictions.ipynb`  
-  Hyperparameter tuning of the best baseline models and generation of final predictions.
+- `4_Hyperparameter_Tuning.ipynb`  
+  Hyperparameter tuning of the best baseline models.
 
 - `utils.py`  
   Shared helper functions and library imports used throughout the notebooks.
@@ -40,7 +44,7 @@ Jupyter notebooks documenting the complete analysis pipeline:
   Pickle file with train-validation split **without preprocessing**, used for transformer models that process raw text internally.
 
 - `metrics_df.csv`  
-  Aggregated classification metrics (macro F1-score, Precision, Recall, Accuracy) for all non-transformer baseline models on both training and validation sets. This file supports comparative model evaluation and selection of top performing approaches.
+  Aggregated classification metrics (macro F1-score, Precision, Recall, Accuracy) for allvbaseline models on both training and validation sets. This file supports comparative model evaluation and selection of top performing approaches.
 
 ### Root Files
 - `project_description.pdf` - Official project handout. 
