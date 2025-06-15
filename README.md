@@ -30,14 +30,17 @@ Jupyter notebooks documenting the complete analysis pipeline:
 - `4_Hyperparameter_Tuning_&_Final_Predictions.ipynb`  
   Hyperparameter tuning of the best baseline models and generation of final predictions.
 
-- `utils.py`
+- `utils.py`  
   Shared helper functions and library imports used throughout the notebooks.
-  
+
 - `train_val_split.pkl`  
   Pickle file with train-validation split **including preprocessing**, to ensure consistent data partitions.
 
 - `train_val_split_no_preproc.pkl`  
   Pickle file with train-validation split **without preprocessing**, used for transformer models that process raw text internally.
+
+- `metrics_df.csv`  
+  Aggregated classification metrics (macro F1-score, Precision, Recall, Accuracy) for all non-transformer baseline models on both training and validation sets. This file supports comparative model evaluation and selection of top performing approaches.
 
 ### Root Files
 - `project_description.pdf` — Official project handout. 
