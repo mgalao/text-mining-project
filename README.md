@@ -22,16 +22,16 @@ Jupyter notebooks documenting the complete analysis pipeline:
 - `tm_final_25.ipynb`  
   Final solution notebook. Retrains the best-performing model on the full training dataset and generates predictions for evaluation.
   
-- `1_EDA_&_Pre-Processing.ipynb`  
+- `tm_eda_and_preprocessing_25.ipynb`  
   Exploratory data analysis and text preprocessing.
 
-- `2_Feature_Engineering_&_Baseline_Models.ipynb`  
+- `tm_tests_01_feat_eng_and_baseline_models_25.ipynb`  
   Feature engineering and baseline classification models implementation and evaluation.
 
-- `3_Classification_Transformers.ipynb`  
+- `tm_tests_02_classif_transf_25.ipynb`  
   Implementation and evaluation of transformer-based classifiers.
 
-- `4_Hyperparameter_Tuning.ipynb`  
+- `tm_03_hp_tuning_25.ipynb`  
   Hyperparameter tuning of the best baseline models.
 
 - `utils.py`  
