@@ -22,7 +22,7 @@ Jupyter notebooks documenting the complete analysis pipeline:
 - `tm_final_25.ipynb`  
   Final solution notebook. Retrains the best-performing model on the full training dataset and generates predictions for evaluation.
   
-- `tm_eda_and_preprocessing_25.ipynb`  
+- `tm_eda_and_preproc_25.ipynb`  
   Exploratory data analysis and text preprocessing.
 
 - `tm_tests_01_feat_eng_and_baseline_models_25.ipynb`  
