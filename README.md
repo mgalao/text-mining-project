@@ -31,7 +31,7 @@ Jupyter notebooks documenting the complete analysis pipeline:
 - `tm_tests_02_classif_transf_25.ipynb`  
   Implementation and evaluation of transformer-based classifiers.
 
-- `tm_03_hp_tuning_25.ipynb`  
+- `tm_tests_03_hp_tuning_25.ipynb`  
   Hyperparameter tuning of the best baseline models.
 
 - `utils.py`  
