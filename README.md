@@ -16,7 +16,7 @@ Contains the datasets provided by the professors:
 - `train.csv`: Training data with labeled tweets.
 - `test.csv`: Test data for evaluation.
 
-### `notebooks/`
+### `project/`
 Jupyter notebooks and files covering the whole process, from data exploration to generating predictions.
 
 - `pred_25.csv`  
