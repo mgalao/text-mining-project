@@ -747,3 +747,62 @@ def plot_confusion_matrix(y_true, y_pred, title="Confusion Matrix", labels=None,
     plt.yticks(fontsize=10)
     plt.tight_layout()
     plt.show()
+
+def plot_best_f1_by_embedding(df):
+    df_best = df.sort_values('Val F1 (Macro)', ascending=False).drop_duplicates('Embedding')
+    df_best = df_best.sort_values('Val F1 (Macro)', ascending=True)
+    df_best['Label'] = df_best['Embedding'] + ' (' + df_best['Model'] + ')'
+
+    labels = df_best['Label']
+    train_f1 = df_best['Train F1 (Macro)']
+    val_f1 = df_best['Val F1 (Macro)']
+
+    y = np.arange(len(labels))
+    bar_width = 0.35
+
+    plt.figure(figsize=(10, 6))
+   
+    plt.barh(y + bar_width, train_f1, height=bar_width, label='Train', color='#1f4e79')
+    plt.barh(y, val_f1, height=bar_width, label='Val', color='#A9C4E2')
+
+    for i in range(len(labels)):
+        plt.text(val_f1.iloc[i] + 0.01, y[i], f'{val_f1.iloc[i]:.2f}', va='center', fontsize=8)
+        plt.text(train_f1.iloc[i] + 0.01, y[i] + bar_width, f'{train_f1.iloc[i]:.2f}', va='center', fontsize=8)
+
+    plt.yticks(y + bar_width / 2, labels, fontsize=9)
+    plt.xlabel('F1 Macro Score', fontsize=11)
+    plt.title('Best Train and Validation F1 per Embedding', fontsize=13)
+    plt.xlim(0, 1.05)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+def plot_model_comparison_all_embeddings(df):
+    unique_embeddings = df['Embedding'].unique()
+    n = len(unique_embeddings)
+    cols = 2
+    rows = math.ceil(n / cols)
+
+    fig, axes = plt.subplots(rows, cols, figsize=(12, 4 * rows))
+    axes = axes.flatten()
+
+    for i, emb in enumerate(sorted(unique_embeddings)):
+        df_sub = df[df['Embedding'] == emb].sort_values('Val F1 (Macro)', ascending=True)
+        ax = axes[i]
+        bars = ax.barh(df_sub['Model'], df_sub['Val F1 (Macro)'], color='#1f4e79')
+
+        for bar, val in zip(bars, df_sub['Val F1 (Macro)']):
+            ax.text(val + 0.01, bar.get_y() + bar.get_height() / 2,
+                    f'{val:.2f}', va='center', fontsize=8)
+
+        ax.set_title(f'{emb}', fontsize=11)
+        ax.set_xlim(0, 1.05)
+
+    # Hide any unused subplots
+    for j in range(i + 1, len(axes)):
+        fig.delaxes(axes[j])
+
+    fig.suptitle('Model Comparison by Embedding (F1 Macro - Validation)', fontsize=14)
+    fig.tight_layout(rect=[0, 0, 1, 0.97])
+    plt.show()
+
