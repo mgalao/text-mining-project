@@ -44,7 +44,7 @@ Jupyter notebooks documenting the complete analysis pipeline:
   Pickle file with train-validation split **without preprocessing**, used for transformer models that process raw text internally.
 
 - `metrics_df.csv`  
-  Aggregated classification metrics (macro F1-score, Precision, Recall, Accuracy) for allvbaseline models on both training and validation sets. This file supports comparative model evaluation and selection of top performing approaches.
+  Aggregated classification metrics (macro F1-score, Precision, Recall, Accuracy) for all baseline models on both training and validation sets. This file supports comparative model evaluation and selection of top performing approaches.
 
 ### Root Files
 - `project_description.pdf` - Official project handout. 
