@@ -37,6 +37,9 @@ Jupyter notebooks and files covering the whole process, from data exploration to
 - `tm_tests_03_hp_tuning_25.ipynb`  
   Hyperparameter tuning of the best baseline models.
 
+- `tm_tests_04_hp_tuning_oversample_25.ipynb`  
+  Hyperparameter tuning of the best baseline models with oversampling.
+
 - `utils.py`  
   Shared helper functions and library imports used throughout the notebooks.
 
