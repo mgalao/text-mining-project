@@ -43,7 +43,7 @@ Jupyter notebooks documenting the complete analysis pipeline:
   Aggregated classification metrics (macro F1-score, Precision, Recall, Accuracy) for all non-transformer baseline models on both training and validation sets. This file supports comparative model evaluation and selection of top performing approaches.
 
 ### Root Files
-- `project_description.pdf` — Official project handout. 
-- `requirements.txt` — List of Python dependencies for this project.
-- `.gitignore` — Specifies files and folders excluded from version control.
-- `README.md` — This file.
+- `project_description.pdf` - Official project handout. 
+- `requirements.txt` - List of Python dependencies for this project.
+- `.gitignore` - Specifies files and folders excluded from version control.
+- `README.md` - This file.
