@@ -40,8 +40,34 @@ import ftfy  # Fix encoding issues
 import emoji
 from langdetect import detect
 from langdetect.lang_detect_exception import LangDetectException
+<<<<<<< Updated upstream
 import contractions
 import string
+=======
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
+import numpy as np
+import gensim.downloader
+import pickle
+#import packages
+from keras.models import Model
+from keras.layers import Input, LSTM, Dense, TimeDistributed, Bidirectional, Masking
+from keras import layers
+import tensorflow as tf
+import tensorflow.keras as keras
+from keras_preprocessing.sequence import pad_sequences
+from scipy import sparse
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import classification_report
+from sklearn.naive_bayes import MultinomialNB
+from gensim.models import Word2Vec
+from keras_preprocessing.sequence import pad_sequences
+from sklearn.utils.class_weight import compute_class_weight
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, accuracy_score
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+>>>>>>> Stashed changes
 
 # feature engineering
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
@@ -209,14 +235,18 @@ def clean_text(text_list, lemmatize=True, stem=False):
 
     return cleaned
 
+<<<<<<< Updated upstream
 
 # --------------- AUX - EMBEDDINGS --------------- 
 
+=======
+>>>>>>> Stashed changes
 # Function to convert tokens into mean embedding vector
 def tweet_to_vec(tokens, model, size):
     vectors = [model.wv[word] for word in tokens if word in model.wv]
     return np.mean(vectors, axis=0) if vectors else np.zeros(size)
 
+<<<<<<< Updated upstream
 # get word embeddings from documents
 def corpus2vec(corpus, glove_model):
     index_set = set(glove_model.index_to_key)  
@@ -743,11 +773,26 @@ def plot_confusion_matrix(y_true, y_pred, title="Confusion Matrix", labels=None,
     plt.title(title, fontsize=14, fontweight='bold')
     plt.xlabel("Predicted Label", fontsize=12)
     plt.ylabel("True Label", fontsize=12)
+=======
+
+# Plots
+
+def plot_confusion_matrix(y_true, y_pred, title="Confusion Matrix", labels=None, figsize=(6, 5), cmap="YlGnBu"):
+    cm = confusion_matrix(y_true, y_pred, labels=labels)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
+
+    fig, ax = plt.subplots(figsize=figsize)
+    disp.plot(ax=ax, cmap=cmap, colorbar=False)
+    ax.set_title(title, fontsize=14, fontweight="bold")
+    ax.set_xlabel("Predicted Label", fontsize=12)
+    ax.set_ylabel("True Label", fontsize=12)
+>>>>>>> Stashed changes
     plt.xticks(fontsize=10)
     plt.yticks(fontsize=10)
     plt.tight_layout()
     plt.show()
 
+<<<<<<< Updated upstream
 def plot_best_f1_by_embedding(df):
     df_best = df.sort_values('Val F1 (Macro)', ascending=False).drop_duplicates('Embedding')
     df_best = df_best.sort_values('Val F1 (Macro)', ascending=True)
@@ -805,4 +850,6 @@ def plot_model_comparison_all_embeddings(df):
     fig.suptitle('Model Comparison by Embedding (F1 Macro - Validation)', fontsize=14)
     fig.tight_layout(rect=[0, 0, 1, 0.97])
     plt.show()
+=======
+>>>>>>> Stashed changes
 
